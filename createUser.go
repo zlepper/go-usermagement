@@ -1,7 +1,6 @@
 package usermanagement
 
 import (
-	"github.com/zlepper/go-usermagement/internal"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,18 +18,18 @@ type UserCreation interface {
 	GetSigningSecret() (signingKey string, err error)
 }
 
-func CreateUser(creation UserCreation, user internal.User) error {
-	err := creation.ValidateUser(user.Username, user.Password, user.Data)
+func CreateUser(creation UserCreation, username, password string, data map[string]interface{}) error {
+	err := creation.ValidateUser(username, password, data)
 	if err != nil {
 		return err
 	}
 
-	hashedPassword, err := hashPassword(user.Password)
+	hashedPassword, err := hashPassword(password)
 	if err != nil {
 		return err
 	}
 
-	err = creation.CreateUser(user.Username, hashedPassword, user.Data)
+	err = creation.CreateUser(username, hashedPassword, data)
 	return err
 }
 

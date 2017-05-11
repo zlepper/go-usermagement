@@ -2,18 +2,28 @@ package echosupport
 
 import (
 	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"github.com/zlepper/go-usermagement"
 	"github.com/zlepper/go-usermagement/internal"
 	"net/http"
 )
 
-func GetUserManagementRouter(g echo.Group, options usermanagement.Options) error {
+// Contains some generated values that should help in hooking up the application
+type Result struct {
+	AuthMiddleware echo.MiddlewareFunc
+}
+
+func GetUserManagementRouter(g echo.Group, options usermanagement.Options) (Result, error) {
 	g.POST("/create", getCreateUserHandler(options))
 	g.POST("/login", getLoginUserHandler(options))
 	g.POST("/startreset", getStartResetUserHandler(options))
 	g.POST("/finishreset", getFinishUserResetHandler(options))
 
-	return nil
+	r := Result{
+		AuthMiddleware: middleware.JWT([]byte(options.GetSigningSecret())),
+	}
+
+	return r, nil
 }
 
 func getStartResetUserHandler(resetUser usermanagement.ResetUser) echo.HandlerFunc {
@@ -57,7 +67,7 @@ func getCreateUserHandler(creation usermanagement.UserCreation) echo.HandlerFunc
 			return err
 		}
 
-		err = usermanagement.CreateUser(creation, user)
+		err = usermanagement.CreateUser(creation, user.Username, user.Password, user.Data)
 		if err != nil {
 			return err
 		}

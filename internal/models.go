@@ -1,8 +1,9 @@
 package internal
 
 type User struct {
-	Username, Password string
-	Data               map[string]interface{}
+	Username string                 `json:"username"`
+	Password string                 `json:"password"`
+	Data     map[string]interface{} `json:"data"`
 }
 
 type LoginInfo struct {
