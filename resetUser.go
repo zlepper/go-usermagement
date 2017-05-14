@@ -6,29 +6,6 @@ import (
 	"time"
 )
 
-type ResetUser interface {
-	// Should check if the User exists. If it does, return true, if not, return false.
-	DoesUserExist(username string) (exists bool, err error)
-	// Should get the time the reset token should be valid for
-	GetResetTokenDuration() (duration time.Duration, err error)
-	// Should save the given token and expiration time so it can be retrieved later on
-	SaveToken(token string, expiration time.Time, username string) (err error)
-	// Should send the reset token to the User somehow. This token should then be supplied for reset confirmation
-	SendResetToken(token string) (err error)
-	// Should fetch the expiration time for the given token
-	GetTokenExpiration(token string) (expiration time.Time, err error)
-	// Should validate that the given password matches any requirements for passwords
-	ValidatePassword(password string) (err error)
-	// Should set the users password to the given value
-	SetUserPassword(username, password string) (err error)
-	// Should ensure the deletion of the given token
-	// At this point the users password has already been reset, so beware of returning errors here
-	// unless something has gone completely wrong.
-	DeleteToken(token string) (err error)
-	// Should fetch the username related to the given token
-	GetUsername(token string) (username string, err error)
-}
-
 type resetToken struct {
 	Expiration time.Time
 	Token      string
@@ -39,7 +16,7 @@ var (
 	ErrInvalidResetToken error = errors.New("Invalid reset token")
 )
 
-func StartResetUser(resetUser ResetUser, username string) error {
+func StartResetUser(resetUser Options, username string) error {
 	exists, err := resetUser.DoesUserExist(username)
 	if err != nil {
 		return err
@@ -62,7 +39,7 @@ func StartResetUser(resetUser ResetUser, username string) error {
 		return err
 	}
 
-	err = resetUser.SendResetToken(token.Token)
+	err = resetUser.SendResetToken(token.Token, username)
 	if err != nil {
 		return err
 	}
@@ -78,7 +55,7 @@ func generateResetToken(duration time.Duration, username string) resetToken {
 	}
 }
 
-func FinishUserReset(resetUser ResetUser, token, password string) error {
+func FinishUserReset(resetUser Options, token, password string) error {
 	err := resetUser.ValidatePassword(password)
 	if err != nil {
 		return err
