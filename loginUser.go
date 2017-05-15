@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/satori/go.uuid"
-	"github.com/zlepper/go-usermagement/internal"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -14,13 +13,13 @@ var (
 	ErrWrongUserOrPassword error = errors.New("Invalid User or password")
 )
 
-func Login(login Options, info internal.LoginInfo) (tokenString string, err error) {
-	hashedPassword, err := login.GetPassword(info.Username)
+func Login(login Options, username string, password string, rememberMe bool) (tokenString string, err error) {
+	hashedPassword, err := login.GetPassword(username)
 	if err != nil {
 		return "", err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(info.Password))
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
 		if err == bcrypt.ErrMismatchedHashAndPassword {
 			return "", ErrWrongUserOrPassword
@@ -29,12 +28,12 @@ func Login(login Options, info internal.LoginInfo) (tokenString string, err erro
 		}
 	}
 
-	subject, err := login.GetSubjectData(info.Username)
+	subject, err := login.GetSubjectData(username)
 	if err != nil {
 		return "", err
 	}
 
-	loginDuration, err := login.GetLoginDuration(info.RememberMe)
+	loginDuration, err := login.GetLoginDuration(rememberMe)
 	if err != nil {
 		return "", err
 	}

@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo"
 	"github.com/zlepper/go-usermagement"
 	"github.com/zlepper/go-usermagement/internal"
+	"log"
 	"net/http"
 )
 
@@ -80,7 +81,7 @@ func getLoginUserHandler(userLogin usermanagement.Options) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		token, err := usermanagement.Login(userLogin, loginInfo)
+		token, err := usermanagement.Login(userLogin, loginInfo.Username, loginInfo.Password, loginInfo.RememberMe)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
@@ -130,6 +131,8 @@ func getChangePasswordHandler(options usermanagement.Options) echo.HandlerFunc {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
+
+		log.Println(request)
 
 		err = usermanagement.ChangePassword(options, request.Username, request.OldPassword, request.NewPassword)
 		if err != nil {
