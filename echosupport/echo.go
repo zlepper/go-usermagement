@@ -2,7 +2,6 @@ package echosupport
 
 import (
 	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
 	"github.com/zlepper/go-usermagement"
 	"github.com/zlepper/go-usermagement/internal"
 	"net/http"
@@ -11,6 +10,30 @@ import (
 // Contains some generated values that should help in hooking up the application
 type Result struct {
 	AuthMiddleware echo.MiddlewareFunc
+}
+
+// Used for all the empty responses, to ensure json parsers doesn't explode when they get the response
+var nothing = struct{}{}
+
+func getJwtMiddleware(signingSecret []byte, options usermanagement.Options) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			template, err := options.GetNewDataCarrier()
+			if err != nil {
+				return err
+			}
+
+			err = usermanagement.GetTokenDataFromRequest(c.Request(), signingSecret, template)
+			if err != nil {
+				return err
+			}
+
+			c.Set("user", template)
+
+			return next(c)
+
+		}
+	}
 }
 
 func GetUserManagementRouter(g *echo.Group, options usermanagement.Options) (*Result, error) {
@@ -24,9 +47,10 @@ func GetUserManagementRouter(g *echo.Group, options usermanagement.Options) (*Re
 	g.POST("/login", getLoginUserHandler(options))
 	g.POST("/startreset", getStartResetUserHandler(options))
 	g.POST("/finishreset", getFinishUserResetHandler(options))
+	g.POST("/changepassword", getChangePasswordHandler(options))
 
 	r := &Result{
-		AuthMiddleware: middleware.JWT([]byte(secret)),
+		AuthMiddleware: getJwtMiddleware(secret, options),
 	}
 
 	return r, err
@@ -44,7 +68,7 @@ func getStartResetUserHandler(resetUser usermanagement.Options) echo.HandlerFunc
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		return c.NoContent(http.StatusAccepted)
+		return c.JSON(http.StatusAccepted, nothing)
 	}
 }
 
@@ -78,7 +102,7 @@ func getCreateUserHandler(creation usermanagement.Options) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		return c.NoContent(http.StatusCreated)
+		return c.JSON(http.StatusCreated, nothing)
 	}
 }
 
@@ -95,6 +119,23 @@ func getFinishUserResetHandler(resetUser usermanagement.Options) echo.HandlerFun
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
 
-		return c.NoContent(http.StatusOK)
+		return c.JSON(http.StatusOK, nothing)
+	}
+}
+
+func getChangePasswordHandler(options usermanagement.Options) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var request internal.ChangePasswordRequest
+		err := c.Bind(&request)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		err = usermanagement.ChangePassword(options, request.Username, request.OldPassword, request.NewPassword)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+
+		return c.JSON(http.StatusOK, nothing)
 	}
 }

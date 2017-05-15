@@ -24,3 +24,9 @@ type FinishResetRequest struct {
 	Token    string `json:"token"`
 	Password string `json:"password"`
 }
+
+type ChangePasswordRequest struct {
+	Username    string `json:"username"`
+	NewPassword string `json:"newPassword"`
+	OldPassword string `json:"oldPassword"`
+}

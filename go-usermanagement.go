@@ -43,4 +43,8 @@ type Options interface {
 	DeleteToken(token string) (err error)
 	// Should fetch the username related to the given token
 	GetUsername(token string) (username string, err error)
+	// Should return a template for the data in the jwt.
+	// this will be used when parsing the jwt to ensure that value of the context
+	// is of a useful type
+	GetNewDataCarrier() (template interface{}, err error)
 }
